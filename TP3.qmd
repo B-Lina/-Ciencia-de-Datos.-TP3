@@ -35,7 +35,7 @@ ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
 #Me da NA cor. no entiendo.
 cor(df_cafeteria$Cantidad, df_cafeteria$tiempo_de_espera)
 #Modelo
-model <- lm(formula = Cantidad ~ tiempo_de_espera, data = df_cafeteria2)
+model <- lm(formula = tiempo_de_espera ~ Cantidad, data = df_cafeteria2)
 model
 
 #y} = 0.25 + 0.46 x es la recta...
@@ -65,14 +65,18 @@ summary(model)
 4.  Utilizar el modelo para predecir el tiempo de espera correspondiente a un pedido de 6 productos y para 12 productos. Representar ambos puntos en el gráfico anterior junto con la recta de ajuste.
 
 ```{r}
-#no fuhnciona..
-obs <- data.frame(Cantidad = 6) 
-predict(model, newdata = obs)
+#Funciona
+obs1 <- data.frame(Cantidad = 6) 
+predict(model, newdata = obs1)
+
+obs2 <- data.frame(Cantidad = 12)
+predict(model, newdata = obs2)
 ```
 
 5.  Estudiar la presencia de datos faltantes (NA) en cada una de las variables del conjunto de datos. Identificar en qué columnas se presentan y cuántos valores faltan en cada caso.
 
 ```{r}
+#como se vio en el summary al ppio la columna Cantidad tiene 479 NA's
 
 ```
 
