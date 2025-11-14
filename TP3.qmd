@@ -1,0 +1,107 @@
+---
+title: "TP3"
+author: "Nombre y Apellido
+format: pdf
+editor: visual
+---
+
+# Trabajo Práctico N°3
+
+Para este trabajo se les proporciona el archivo `cafeteria_UNAHUR.csv`, usado en el TP1, que contiene registros correspondientes a transacciones en la cafetería. El dataset incluye información de la cantidad de productos adquiridos y el tiempo de preparación.
+
+Para la correcta realización del presente Trabajo Práctico, se pide dar las respuestas solicitadas e introducir, dentro del chunk correspondiente, el código desarrollado para obtener cada una de ellas. Incluir además, los paquetes utilizados. La idea es que una persona pueda correr este script sin ningún mensaje de error.
+
+1.  Escribir el modelo de regresión lineal simple que describa la influencia de la cantidad de productos pedidos en el tiempo de espera.
+
+```{r}
+path = '/home/cris/Documentos/Ciencia_datos/teoria/3ra_Parte/cafeteria_UNAHUR.csv'
+
+# ==== a modo de analisis exploratorio
+df_cafeteria <- read.csv(path)
+summary(df_cafeteria)
+df_cafeteria
+library(ggplot2)
+library(ggthemes)
+df_cafeteria2 <- na.omit(df_cafeteria)
+summary(df_cafeteria2)
+
+ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
+  geom_point(color = "pink") +
+  xlab("Cantidad") +
+  ylab("Tiempo Preparación (m)") +
+  theme_hc()
+#Pareciera haber una relacion lineal, al menos se asemeja
+#=====
+#Me da NA cor. no entiendo.
+cor(df_cafeteria$Cantidad, df_cafeteria$tiempo_de_espera)
+#Modelo
+model <- lm(formula = Cantidad ~ tiempo_de_espera, data = df_cafeteria2)
+model
+
+#y} = 0.25 + 0.46 x es la recta...
+
+
+```
+
+2.  Representar gráficamente la relación entre la cantidad de productos pedidos y el tiempo de espera. Agregar al gráfico la recta de ajuste obtenida con el modelo de regresión lineal.
+
+```{r}
+ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
+  geom_point(col = "pink") +
+  geom_abline(slope = 0.46, intercept = 0.25, color = "cyan") +
+  xlab("Cantidad") +
+  ylab("Tiempo Espera (m)") +
+  theme_hc()
+
+```
+
+3.  Calcular el error estándar residual y el coeficiente de determinación (R²) del modelo de regresión lineal. ¿Qué se puede concluir sobre la bondad de ajuste del modelo que relaciona la cantidad de productos pedidos con el tiempo de espera?
+
+```{r}
+summary(model)
+
+```
+
+4.  Utilizar el modelo para predecir el tiempo de espera correspondiente a un pedido de 6 productos y para 12 productos. Representar ambos puntos en el gráfico anterior junto con la recta de ajuste.
+
+```{r}
+#no fuhnciona..
+obs <- data.frame(Cantidad = 6) 
+predict(model, newdata = obs)
+```
+
+5.  Estudiar la presencia de datos faltantes (NA) en cada una de las variables del conjunto de datos. Identificar en qué columnas se presentan y cuántos valores faltan en cada caso.
+
+```{r}
+
+```
+
+6.  Realizar una imputación de datos faltantes por la media para la variable Cantidad.
+
+```{r}
+
+```
+
+7.  Realizar una imputación de datos faltantes de la columna cantidad por el método de Cohen.
+
+```{r}
+
+```
+
+8.  Realizar una imputación de datos faltantes de la columna cantidad por regresión lineal
+
+```{r}
+
+```
+
+9.  Con todas las variables sin datos faltantes, realizar una imputación de datos faltantes por vecinos más cercanos utilizando la distancia de Manhattan.
+
+```{r}
+
+```
+
+10. Realizar un histograma de los datos disponibles para la cantidad y compararlo con los histogramas de cada uno de los métodos de imputación aplicados.
+
+```{r}
+
+```
