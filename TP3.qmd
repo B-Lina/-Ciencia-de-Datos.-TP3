@@ -22,8 +22,6 @@ summary(df_cafeteria)
 df_cafeteria
 library(ggplot2)
 library(ggthemes)
-df_cafeteria2 <- na.omit(df_cafeteria)
-summary(df_cafeteria2)
 
 ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
   geom_point(color = "pink") +
@@ -65,7 +63,7 @@ summary(model)
 4.  Utilizar el modelo para predecir el tiempo de espera correspondiente a un pedido de 6 productos y para 12 productos. Representar ambos puntos en el gráfico anterior junto con la recta de ajuste.
 
 ```{r}
-#Funciona
+#Funciona ok!
 obs1 <- data.frame(Cantidad = 6) 
 predict(model, newdata = obs1)
 
@@ -83,29 +81,136 @@ predict(model, newdata = obs2)
 6.  Realizar una imputación de datos faltantes por la media para la variable Cantidad.
 
 ```{r}
+imp_media <- replace(df_cafeteria$Cantidad, 
+                     is.na(df_cafeteria$Cantidad), 
+                     mean(df_cafeteria$Cantidad, na.rm = TRUE))
 
 ```
 
 7.  Realizar una imputación de datos faltantes de la columna cantidad por el método de Cohen.
 
 ```{r}
+#Cantidad total de Datos
+n <- length(df_cafeteria$Cantidad)
 
+#Cantidad total de datos completos
+m <- length(na.omit(df_cafeteria$Cantidad))
+
+#Se calcula media y desvio estan
+media <- mean(df_cafeteria$Cantidad, na.rm = TRUE)
+sigma <- sd(df_cafeteria$Cantidad, na.rm = TRUE)
+
+#Se calculan las imputaciones
+imp <- media - sqrt((n + m - 1) / (n + m)) * sigma
+Imp <- media + sqrt((n + m - 1) / (n + m)) * sigma
+
+# Posiciones donde hay datos faltantes
+pos <- which(is.na(df_cafeteria$Cantidad) == TRUE)
+
+# Dividimos las posiciones a la mitad
+pos1 <- pos[1:round((n - m) / 2)]
+pos2 <- pos[(round((n - m) / 2) + 1):(n - m)]
+
+#Realizamos imputacines
+imp_Cohen <- df_cafeteria$Cantidad
+imp_Cohen[pos1] <- imp
+imp_Cohen[pos2] <- Imp
 ```
 
 8.  Realizar una imputación de datos faltantes de la columna cantidad por regresión lineal
 
 ```{r}
+# Eliminamos los datos faltantes
+Cafeteria <- na.omit(df_cafeteria)
+
+# Calculamos el modelo
+modelo_cafe <- lm(formula = Cantidad ~ ., data = Cafeteria)
+modelo_cafe
+
+predicciones <- predict(modelo_cafe, newdata = Cafeteria[pos,])
+
+imp_reg <- df_cafeteria$Cantidad
+imp_reg[pos] <- predicciones
 
 ```
 
 9.  Con todas las variables sin datos faltantes, realizar una imputación de datos faltantes por vecinos más cercanos utilizando la distancia de Manhattan.
 
 ```{r}
+# Función para calcular la distancia de Manhattan
+dMan <- function(x, y){
+  return(sum(abs(x - y)))
+}
+
+distMan <- matrix(0, nrow = (n - m), ncol = m)
+for (i in 1:(n - m)){
+  for (j in 1:m){
+    distMan[i,j] <- dMan(df_cafeteria[pos[i], -1], Cafeteria[j,-1]) 
+  }
+}
+#A la dist minima
+minDistMan <- apply(distMan, 1, which.min)
+
+#Imputacion
+imp_vec_man <- df_cafeteria$Cantidad
+imp_vec_man[pos] <- Cafeteria$Cantidad[minDistMan]
 
 ```
 
 10. Realizar un histograma de los datos disponibles para la cantidad y compararlo con los histogramas de cada uno de los métodos de imputación aplicados.
 
 ```{r}
+
+# Armamos un data frame con las imputaciones
+
+datos <- data.frame(Originales = df_cafeteria$Cantidad,
+                    Medias = imp_media,
+                    Cohen = imp_Cohen,
+                    Regresión = imp_reg,
+                    VecinosMan = imp_vec_man)
+
+# Armamos los histogramas
+
+h1 <- ggplot(datos, aes(x = Originales)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Cantidades disponibles") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h2 <- ggplot(datos, aes(x = Medias)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por la media") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h3 <- ggplot(datos, aes(x = Cohen)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por el método de Cohen") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h4 <- ggplot(datos, aes(x = Regresión)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por regresión") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+
+h5 <- ggplot(datos, aes(x = VecinosMan)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por vecinos más cercanos (distancia de Manhattan)") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h1
+h2
+h3
+h4
+h5
 
 ```
