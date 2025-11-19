@@ -1,0 +1,232 @@
+---
+title: "TP3"
+author: "Lina Ballesteros, Cristian Viatola, Valentin Leites"
+format: pdf
+editor: visual
+---
+
+# Trabajo Práctico N°3
+
+Para este trabajo se les proporciona el archivo `cafeteria_UNAHUR.csv`, usado en el TP1, que contiene registros correspondientes a transacciones en la cafetería. El dataset incluye información de la cantidad de productos adquiridos y el tiempo de preparación.
+
+Para la correcta realización del presente Trabajo Práctico, se pide dar las respuestas solicitadas e introducir, dentro del chunk correspondiente, el código desarrollado para obtener cada una de ellas. Incluir además, los paquetes utilizados. La idea es que una persona pueda correr este script sin ningún mensaje de error.
+
+***Carga y preparación de datos***
+
+```{r}
+df_cafeteria <- read.csv('/Users/LENOVO/Documents/Ciencia-de-Datos.TP3/cafeteria_UNAHUR.csv')
+
+df_cafeteria 
+```
+
+1.  Escribir el modelo de regresión lineal simple que describa la influencia de la cantidad de productos pedidos en el tiempo de espera.
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+
+ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
+  geom_point(color = "pink") +
+  xlab("Cantidad") +
+  ylab("Tiempo Preparación (m)") +
+  theme_hc()
+
+cor(df_cafeteria$Cantidad, df_cafeteria$tiempo_de_espera)
+
+#Modelo
+model <- lm(formula = tiempo_de_espera ~ Cantidad, data = df_cafeteria)
+model
+
+```
+
+2.  Representar gráficamente la relación entre la cantidad de productos pedidos y el tiempo de espera. Agregar al gráfico la recta de ajuste obtenida con el modelo de regresión lineal.
+
+```{r}
+
+ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
+  geom_point(col = "pink") +
+  geom_abline(slope = 2.0731, intercept = - 0.2111, color = "cyan") +
+  xlab("Cantidad") +
+  ylab("Tiempo Espera (m)") +
+  theme_hc()
+```
+
+3.  Calcular el error estándar residual y el coeficiente de determinación (R²) del modelo de regresión lineal. ¿Qué se puede concluir sobre la bondad de ajuste del modelo que relaciona la cantidad de productos pedidos con el tiempo de espera?
+
+```{r}
+summary(model)
+
+```
+
+4.  Utilizar el modelo para predecir el tiempo de espera correspondiente a un pedido de 6 productos y para 12 productos. Representar ambos puntos en el gráfico anterior junto con la recta de ajuste.
+
+```{r}
+nuevas_cantidades <- data.frame(Cantidad = c(6, 12))
+
+predicciones <- predict(model, newdata = nuevas_cantidades)
+
+puntos_prediccion <- data.frame(
+  Cantidad = nuevas_cantidades$Cantidad,
+  tiempo_de_espera = predicciones
+)
+
+# 4. Crear el gráfico con los datos originales, la recta de ajuste correcta y los puntos de predicción
+ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
+  geom_point(col = "pink", alpha = 0.6) + # Los puntos originales
+  
+  # Recta de ajuste con los coeficientes CORRECTOS de tu modelo
+  geom_abline(slope = 2.0731, intercept = -0.2111, color = "cyan", size = 1, linetype = "solid") +
+  
+  # Añadir los puntos de predicción
+  geom_point(data = puntos_prediccion, aes(x = Cantidad, y = tiempo_de_espera), 
+             color = "red", size = 2,) + # 'shape = 8' para que sean estrellas o asteriscos
+  
+  xlab("Cantidad") +
+  ylab("Tiempo Espera (m)") +
+  ggtitle("Relación entre Cantidad y Tiempo de Espera con Predicciones") +
+  theme_hc()
+
+```
+
+5.  Estudiar la presencia de datos faltantes (NA) en cada una de las variables del conjunto de datos. Identificar en qué columnas se presentan y cuántos valores faltan en cada caso.
+
+```{r}
+
+summary(model)
+
+```
+
+6.  Realizar una imputación de datos faltantes por la media para la variable Cantidad.
+
+```{r}
+imp_media <- replace(df_cafeteria$Cantidad, 
+                     is.na(df_cafeteria$Cantidad), 
+                     mean(df_cafeteria$Cantidad, na.rm = TRUE))
+
+```
+
+7.  Realizar una imputación de datos faltantes de la columna cantidad por el método de Cohen.
+
+```{r}
+#Cantidad total de Datos
+n <- length(df_cafeteria$Cantidad)
+
+#Cantidad total de datos completos
+m <- length(na.omit(df_cafeteria$Cantidad))
+
+#Se calcula media y desvio estan
+media <- mean(df_cafeteria$Cantidad, na.rm = TRUE)
+sigma <- sd(df_cafeteria$Cantidad, na.rm = TRUE)
+
+#Se calculan las imputaciones
+imp <- media - sqrt((n + m - 1) / (n + m)) * sigma
+Imp <- media + sqrt((n + m - 1) / (n + m)) * sigma
+
+# Posiciones donde hay datos faltantes
+pos <- which(is.na(df_cafeteria$Cantidad) == TRUE)
+
+# Dividimos las posiciones a la mitad
+pos1 <- pos[1:round((n - m) / 2)]
+pos2 <- pos[(round((n - m) / 2) + 1):(n - m)]
+
+#Realizamos imputacines
+imp_Cohen <- df_cafeteria$Cantidad
+imp_Cohen[pos1] <- imp
+imp_Cohen[pos2] <- Imp
+
+```
+
+8.  Realizar una imputación de datos faltantes de la columna cantidad por regresión lineal
+
+```{r}
+# Eliminamos los datos faltantes
+Cafeteria <- na.omit(df_cafeteria)
+
+# Calculamos el modelo
+modelo_cafe <- lm(formula = Cantidad ~ ., data = Cafeteria)
+modelo_cafe
+
+predicciones <- predict(modelo_cafe, newdata = Cafeteria[pos,])
+
+imp_reg <- df_cafeteria$Cantidad
+imp_reg[pos] <- predicciones
+
+```
+
+9.  Con todas las variables sin datos faltantes, realizar una imputación de datos faltantes por vecinos más cercanos utilizando la distancia de Manhattan.
+
+```{r}
+# Función para calcular la distancia de Manhattan
+dMan <- function(x, y){
+  return(sum(abs(x - y)))
+}
+
+distMan <- matrix(0, nrow = (n - m), ncol = m)
+for (i in 1:(n - m)){
+  for (j in 1:m){
+    distMan[i,j] <- dMan(df_cafeteria[pos[i], -1], Cafeteria[j,-1]) 
+  }
+}
+#A la dist minima
+minDistMan <- apply(distMan, 1, which.min)
+
+#Imputacion
+imp_vec_man <- df_cafeteria$Cantidad
+imp_vec_man[pos] <- Cafeteria$Cantidad[minDistMan]
+```
+
+10. Realizar un histograma de los datos disponibles para la cantidad y compararlo con los histogramas de cada uno de los métodos de imputación aplicados.
+
+```{r}
+# Armamos un data frame con las imputaciones
+
+datos <- data.frame(Originales = df_cafeteria$Cantidad,
+                    Medias = imp_media,
+                    Cohen = imp_Cohen,
+                    Regresión = imp_reg,
+                    VecinosMan = imp_vec_man)
+
+# Armamos los histogramas
+
+h1 <- ggplot(datos, aes(x = Originales)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Cantidades disponibles") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h2 <- ggplot(datos, aes(x = Medias)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por la media") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h3 <- ggplot(datos, aes(x = Cohen)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por el método de Cohen") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h4 <- ggplot(datos, aes(x = Regresión)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por regresión") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+
+h5 <- ggplot(datos, aes(x = VecinosMan)) +
+  geom_histogram(fill = "darkseagreen2", color = "darkseagreen", position = "identity") +
+  ggtitle("Imputación por vecinos más cercanos (distancia de Manhattan)") +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+h1
+h2
+h3
+h4
+h5
+```
