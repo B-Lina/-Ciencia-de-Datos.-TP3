@@ -1,6 +1,6 @@
 ---
 title: "TP3"
-author: "Nombre y Apellido
+author: "Lina Ballesteros, Cristian Viatola, Valentin Leites"
 format: pdf
 editor: visual
 ---
@@ -11,15 +11,17 @@ Para este trabajo se les proporciona el archivo `cafeteria_UNAHUR.csv`, usado en
 
 Para la correcta realización del presente Trabajo Práctico, se pide dar las respuestas solicitadas e introducir, dentro del chunk correspondiente, el código desarrollado para obtener cada una de ellas. Incluir además, los paquetes utilizados. La idea es que una persona pueda correr este script sin ningún mensaje de error.
 
+***Carga y preparación de datos***
+
+```{r}
+df_cafeteria <- read.csv('/Users/LENOVO/Documents/Ciencia-de-Datos.TP3/cafeteria_UNAHUR.csv')
+
+df_cafeteria 
+```
+
 1.  Escribir el modelo de regresión lineal simple que describa la influencia de la cantidad de productos pedidos en el tiempo de espera.
 
 ```{r}
-path = '/home/cris/Documentos/Ciencia_datos/teoria/3ra_Parte/cafeteria_UNAHUR.csv'
-
-# ==== a modo de analisis exploratorio
-df_cafeteria <- read.csv(path)
-summary(df_cafeteria)
-df_cafeteria
 library(ggplot2)
 library(ggthemes)
 
@@ -28,29 +30,25 @@ ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
   xlab("Cantidad") +
   ylab("Tiempo Preparación (m)") +
   theme_hc()
-#Pareciera haber una relacion lineal, al menos se asemeja
-#=====
-#Me da NA cor. no entiendo.
+
 cor(df_cafeteria$Cantidad, df_cafeteria$tiempo_de_espera)
+
 #Modelo
-model <- lm(formula = tiempo_de_espera ~ Cantidad, data = df_cafeteria2)
+model <- lm(formula = tiempo_de_espera ~ Cantidad, data = df_cafeteria)
 model
-
-#y} = 0.25 + 0.46 x es la recta...
-
 
 ```
 
 2.  Representar gráficamente la relación entre la cantidad de productos pedidos y el tiempo de espera. Agregar al gráfico la recta de ajuste obtenida con el modelo de regresión lineal.
 
 ```{r}
+
 ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
   geom_point(col = "pink") +
-  geom_abline(slope = 0.46, intercept = 0.25, color = "cyan") +
+  geom_abline(slope = 2.0731, intercept = - 0.2111, color = "cyan") +
   xlab("Cantidad") +
   ylab("Tiempo Espera (m)") +
   theme_hc()
-
 ```
 
 3.  Calcular el error estándar residual y el coeficiente de determinación (R²) del modelo de regresión lineal. ¿Qué se puede concluir sobre la bondad de ajuste del modelo que relaciona la cantidad de productos pedidos con el tiempo de espera?
@@ -63,18 +61,38 @@ summary(model)
 4.  Utilizar el modelo para predecir el tiempo de espera correspondiente a un pedido de 6 productos y para 12 productos. Representar ambos puntos en el gráfico anterior junto con la recta de ajuste.
 
 ```{r}
-#Funciona ok!
-obs1 <- data.frame(Cantidad = 6) 
-predict(model, newdata = obs1)
+nuevas_cantidades <- data.frame(Cantidad = c(6, 12))
 
-obs2 <- data.frame(Cantidad = 12)
-predict(model, newdata = obs2)
+predicciones <- predict(model, newdata = nuevas_cantidades)
+
+puntos_prediccion <- data.frame(
+  Cantidad = nuevas_cantidades$Cantidad,
+  tiempo_de_espera = predicciones
+)
+
+# 4. Crear el gráfico con los datos originales, la recta de ajuste correcta y los puntos de predicción
+ggplot(data = df_cafeteria, aes(x = Cantidad, y = tiempo_de_espera)) +
+  geom_point(col = "pink", alpha = 0.6) + # Los puntos originales
+  
+  # Recta de ajuste con los coeficientes CORRECTOS de tu modelo
+  geom_abline(slope = 2.0731, intercept = -0.2111, color = "cyan", size = 1, linetype = "solid") +
+  
+  # Añadir los puntos de predicción
+  geom_point(data = puntos_prediccion, aes(x = Cantidad, y = tiempo_de_espera), 
+             color = "red", size = 2,) + # 'shape = 8' para que sean estrellas o asteriscos
+  
+  xlab("Cantidad") +
+  ylab("Tiempo Espera (m)") +
+  ggtitle("Relación entre Cantidad y Tiempo de Espera con Predicciones") +
+  theme_hc()
+
 ```
 
 5.  Estudiar la presencia de datos faltantes (NA) en cada una de las variables del conjunto de datos. Identificar en qué columnas se presentan y cuántos valores faltan en cada caso.
 
 ```{r}
-#como se vio en el summary al ppio la columna Cantidad tiene 479 NA's
+
+summary(model)
 
 ```
 
@@ -115,6 +133,7 @@ pos2 <- pos[(round((n - m) / 2) + 1):(n - m)]
 imp_Cohen <- df_cafeteria$Cantidad
 imp_Cohen[pos1] <- imp
 imp_Cohen[pos2] <- Imp
+
 ```
 
 8.  Realizar una imputación de datos faltantes de la columna cantidad por regresión lineal
@@ -154,13 +173,11 @@ minDistMan <- apply(distMan, 1, which.min)
 #Imputacion
 imp_vec_man <- df_cafeteria$Cantidad
 imp_vec_man[pos] <- Cafeteria$Cantidad[minDistMan]
-
 ```
 
 10. Realizar un histograma de los datos disponibles para la cantidad y compararlo con los histogramas de cada uno de los métodos de imputación aplicados.
 
 ```{r}
-
 # Armamos un data frame con las imputaciones
 
 datos <- data.frame(Originales = df_cafeteria$Cantidad,
@@ -212,5 +229,4 @@ h2
 h3
 h4
 h5
-
 ```
